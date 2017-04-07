@@ -68,6 +68,7 @@ class Configuration implements ConfigurationInterface
                         ->children()
                             ->scalarNode('access_token')->isRequired()->end()
                             ->scalarNode('remote_path')->isRequired()->end()
+                            ->scalarNode('num_files_to_save')->defaultValue('0')->end()
                         ->end()
                     ->end()
                     ->arrayNode('google_drive')

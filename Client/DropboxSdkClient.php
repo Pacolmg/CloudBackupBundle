@@ -42,6 +42,7 @@ class DropboxSdkClient implements ClientInterface, DownloadableClientInterface
         $params             = $params['dropbox_sdk'];
         $this->access_token = $params['access_token'];
         $this->remotePath   = $params['remote_path'];
+        $this->numFilesTosave   = $params['num_files_to_save'];
     }
 
     /**
@@ -58,6 +59,25 @@ class DropboxSdkClient implements ClientInterface, DownloadableClientInterface
 
         $client = new Dropbox\Client($this->access_token, 'CloudBackupBundle');
         $size   = filesize($archive);
+
+        $entry = $client->getMetadataWithChildren($this->remotePath);
+        if (!$entry['is_dir']) {
+            throw RestoringNotAvailableException::create();
+        }
+        
+        if ($this->numFilesTosave>0){
+            foreach($entry['contents'] as $k=>$child){
+                if ($child['is_dir']) unset($entry['contents'][$k]);
+            }
+            if (count($entry['contents'])>$this->numFilesTosave){
+                $entry['contents'] = array_slice($entry['contents'], 0, count($entry['contents'])-$this->numFilesTosave+1);
+                foreach($entry['contents'] as $child){
+                    $client->delete($child['path']);
+                }
+            }
+        }
+
+
 
         $fp = fopen($archive, 'rb');
         $client->uploadFile($this->remotePath.'/'.end($fileName), Dropbox\WriteMode::add(), $fp, $size);
